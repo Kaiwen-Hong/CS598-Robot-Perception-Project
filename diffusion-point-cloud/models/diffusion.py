@@ -98,6 +98,7 @@ class DiffusionPoint(Module):
         self.var_sched = var_sched
 
     def get_loss(self, x_0, context, t=None):
+        # This implements Alg 1 of the Denoising Diffusion model paper. 
         """
         Args:
             x_0:  Input point cloud, (B, N, d).
@@ -119,6 +120,7 @@ class DiffusionPoint(Module):
         return loss
 
     def sample(self, num_points, context, point_dim=3, flexibility=0.0, ret_traj=False):
+        # Context refers to shape latent in 3d point cloud gen paper. This follows generation code in Alg2 of Denoising diffusion model paper 
         batch_size = context.size(0)
         x_T = torch.randn([batch_size, num_points, point_dim]).to(context.device)
         traj = {self.var_sched.num_steps: x_T}
@@ -134,7 +136,7 @@ class DiffusionPoint(Module):
             x_t = traj[t]
             beta = self.var_sched.betas[[t]*batch_size]
             e_theta = self.net(x_t, beta=beta, context=context)
-            x_next = c0 * (x_t - c1 * e_theta) + sigma * z
+            x_next = c0 * (x_t - c1 * e_theta) + sigma * z  # Lines 4 in Algorithm 2 of Denoising diffusion model paper. 
             traj[t-1] = x_next.detach()     # Stop gradient and save trajectory.
             traj[t] = traj[t].cpu()         # Move previous output to CPU memory.
             if not ret_traj:
